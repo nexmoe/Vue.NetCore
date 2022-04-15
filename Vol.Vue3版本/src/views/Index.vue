@@ -19,9 +19,6 @@
     </div>
     <div class="vol-container" :style="{ left: menuWidth - 1 + 'px' }">
       <div class="vol-header">
-        <span class="header-text"
-          >支持业务代码扩展的快速开发框架(vue3.x版本)</span
-        >
         <div class="header-info">
           <div class="h-link">
             <a
@@ -152,13 +149,6 @@ export default defineComponent({
       { name: 'white', color: '#fff' }
     ]);
     const links = ref([
-      { text: '框架视频', path: 'https://www.cctalk.com/m/group/90268531', id: -3 },
-      { text: '大屏数据', path: '/bigdata', id: -3 },
-      {
-        text: '框架文档',
-        path: 'http://v2.volcore.xyz/document/guide',
-        id: -2
-      },
       { text: '个人中心', path: '/UserInfo', id: -1 },
       { text: '安全退出', path: '/login', id: -4 }
     ]);
