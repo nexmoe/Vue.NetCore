@@ -61,6 +61,22 @@ const routes = [
     ]
   },
   {
+    path: '/pub/index',
+    name: 'pubIndex',
+    meta: {
+      anonymous: true
+    },
+    component: () => import('@/views/pub/Index.vue')
+  }, 
+  {
+    path: '/pub/detail',
+    name: 'pubDetail',
+    meta: {
+      anonymous: true
+    },
+    component: () => import('@/views/pub/Detail.vue')
+  }, 
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/Login.vue')
