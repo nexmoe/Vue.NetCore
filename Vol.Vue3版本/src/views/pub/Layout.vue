@@ -36,6 +36,7 @@ body {
 	margin: 0;
 }
 .nexmoe-main {
+    width: 1080px;
 	margin: 0 auto;
 }
 </style>

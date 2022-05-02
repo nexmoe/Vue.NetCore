@@ -1,6 +1,6 @@
 <template>
 	<nav>
-		<a><h1>教师页面</h1></a>
+		<a><h1>导师页面</h1></a>
 		<ul>
 			<li><router-link to="/pub/index" checked="">首页</router-link></li>
 		</ul>

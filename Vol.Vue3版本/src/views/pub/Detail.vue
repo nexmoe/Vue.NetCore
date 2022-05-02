@@ -85,7 +85,6 @@ const activeName = ref("jbqk");
 fetch("http://10.30.0.151:8081/api/dsxx/" + router.params.id)
 	.then((response) => response.json())
 	.then((res) => {
-		console.log(res);
 		item.value = res;
 	});
 </script>

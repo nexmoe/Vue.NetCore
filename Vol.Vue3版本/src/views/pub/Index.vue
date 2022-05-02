@@ -1,5 +1,10 @@
 <template>
-	<el-input v-model="keywords" placeholder="在这里搜索" class="nexmoe-search">
+	<el-input
+		clearable
+		v-model="keywords"
+		placeholder="在这里搜索"
+		class="nexmoe-search"
+	>
 		<template #append>
 			<el-button icon="el-icon-search" />
 		</template>
@@ -18,7 +23,7 @@
 			</el-col>
 		</el-row>
 	</section>
-	<section class="xueyuan">
+	<section v-if="false" class="xueyuan">
 		<header>
 			<h2>
 				学院导航
@@ -41,7 +46,6 @@
 
 <script setup>
 import Card from "./components/Card.vue";
-import { useRouter } from "vue-router";
 import { ref, watch } from "vue";
 const keywords = ref("");
 const dataList = ref([]);
@@ -58,7 +62,6 @@ const getDataBykeyword = () => {
 	)
 		.then((response) => response.json())
 		.then((res) => {
-			console.log(res);
 			dataList.value = res.data;
 			dataTotal.value = res.count;
 		});
@@ -72,7 +75,6 @@ const getData = () => {
 	)
 		.then((response) => response.json())
 		.then((res) => {
-			console.log(res);
 			dataList.value = res.data;
 			dataTotal.value = res.count;
 		});
@@ -89,7 +91,6 @@ watch(keywords, () => {
 watch(pageNow, () => {
 	keywords.value ? getDataBykeyword() : getData();
 });
-console.log("Made By Nexmoe");
 </script>
 
 <style scoped>
