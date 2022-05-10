@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Autofac;
+using IGeekFan.AspNetCore.Knife4jUI;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -26,6 +28,7 @@ using VOL.Core.Extensions;
 using VOL.Core.Filters;
 using VOL.Core.Middleware;
 using VOL.Core.ObjectActionValidator;
+using VOL.WebApi.Controllers.Hubs;
 
 namespace VOL.WebApi
 {
@@ -113,7 +116,41 @@ namespace VOL.WebApi
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "VOL.Core后台Api", Version = "v1" });
+                foreach (var controller in GetControllers())
+                {
+                    var apiSetting = controller.GetCustomAttribute(typeof(ApiExplorerSettingsAttribute));
+                    if (apiSetting==null)
+                    {
+                        c.SwaggerDoc(controller.Name, new OpenApiInfo
+                        {
+                            Version = "v1",
+                            Title = controller.Name,
+                            Description = "VOL.Core后台Api"
+                        });
+                    }
+                   else if (!(((ApiExplorerSettingsAttribute) apiSetting)!).IgnoreApi)
+                    {
+                        var groupName = GetSwaggerGroupName(controller);
+
+                        c.SwaggerDoc(groupName, new OpenApiInfo
+                        {
+                            Version = "v1",
+                            Title = groupName,
+                            Description = "VOL.Core后台Api"
+                        });
+                    }
+                }
+                foreach (var name in Directory.GetFiles(AppContext.BaseDirectory, "*.*",
+                             SearchOption.AllDirectories).Where(f => Path.GetExtension(f).ToLower() == ".xml"))
+                {
+                    c.IncludeXmlComments(name, includeControllerXmlComments: true);
+                }
+
+                c.CustomOperationIds(apiDesc =>
+                {  
+                    var controllerAction = apiDesc.ActionDescriptor as ControllerActionDescriptor;
+                    return controllerAction?.ControllerName + "-" + controllerAction?.ActionName;
+                });
                 var security = new Dictionary<string, IEnumerable<string>>
                 { { AppSetting.Secret.Issuer, new string[] { } }};
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
@@ -150,7 +187,7 @@ namespace VOL.WebApi
                 options.ClientErrorMapping[404].Link =
                     "https://*/404";
             });
-            //ApiBehaviorOptions
+            services.AddSignalR();
         }
         public void ConfigureContainer(ContainerBuilder builder)
         {
@@ -196,11 +233,26 @@ namespace VOL.WebApi
             app.UseStaticHttpContext();
 
             app.UseSwagger();
-            app.UseSwaggerUI(c =>
+            app.UseKnife4UI(c =>
             {
+                foreach (var controller in GetControllers())
+                {
+                    var apiSetting = controller.GetCustomAttribute(typeof(ApiExplorerSettingsAttribute));
+                    if (apiSetting==null)
+                    {
+                        c.SwaggerEndpoint($"/swagger/{controller.Name}/swagger.json", controller.Name);
+                    }
+                    else  if (!(((ApiExplorerSettingsAttribute) apiSetting)!).IgnoreApi)
+                    {
+                        var groupName = GetSwaggerGroupName(controller);
+                        c.SwaggerEndpoint($"/swagger/{groupName}/swagger.json", groupName);
+                    }
+                }
+                c.DocExpansion(DocExpansion.List); //默认展开列表
+                c.OAuthClientId("VOL.WebApi"); //oauth客户端名称
                 //2个下拉框选项  选择对应的文档
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "VOL.Core后台Api");
-                c.SwaggerEndpoint("/swagger/v2/swagger.json", "测试第三方Api");
+                // c.SwaggerEndpoint("/swagger/v1/swagger.json", "VOL.Core后台Api");
+                // c.SwaggerEndpoint("/swagger/v2/swagger.json", "测试第三方Api");
                 c.RoutePrefix = "";
             });
             app.UseRouting();
@@ -211,7 +263,47 @@ namespace VOL.WebApi
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                //配置SignalR
+                if (AppSetting.UseSignalR)
+                {
+                    string corsUrls = Configuration["CorsUrls"];
+                    endpoints.MapHub<HomePageMessageHub>("/message").RequireCors(t =>
+                    t.WithOrigins(corsUrls.Split(',')).
+                    AllowAnyMethod().
+                    AllowAnyHeader().
+                    AllowCredentials());
+                }
+
             });
+        }
+
+        /// <summary>
+        /// 获取控制器对应的swagger分组值
+        /// </summary>
+        private string GetSwaggerGroupName(Type controller)
+        {
+            var groupName = controller.Name.Replace("Controller", "");
+            var apiSetting = controller.GetCustomAttribute(typeof(ApiExplorerSettingsAttribute));
+            if (apiSetting != null)
+            {
+                groupName = ((ApiExplorerSettingsAttribute)apiSetting).GroupName;
+
+            }
+
+            return groupName;
+        }
+
+        /// <summary>
+        /// 获取所有的控制器
+        /// </summary>
+        private List<Type> GetControllers()
+        {
+            Assembly asm = Assembly.GetExecutingAssembly();
+
+            var contradistinction = asm.GetTypes()
+                .Where(type => typeof(ControllerBase).IsAssignableFrom(type))
+                .OrderBy(x => x.Name).ToList();
+            return contradistinction;
         }
     }
 

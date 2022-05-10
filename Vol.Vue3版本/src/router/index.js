@@ -91,30 +91,68 @@ const routes = [
         },
         component: () => import("@/views/pub/Detail.vue"),
       },
-		],
-	},
-	{
-		path: "/login",
-		name: "login",
-		component: () => import("@/views/Login.vue"),
-	},
-	{
-		path: "/app/guide",
-		name: "apphome",
-		meta: {
-			anonymous: true,
-		},
-		component: () => import("@/views/h5/Guide.vue"),
-	},
-	{
-		path: "/bigdata",
-		name: "bigdata",
-		component: () => import("@/views/charts/bigdata.vue"),
-		meta: {
-			keepAlive: false,
-		},
-	},
-];
+      {
+        path: '/sysMenu',
+        name: 'sysMenu',
+        component: () => import('@/views/system/Sys_Menu.vue')
+      }, {
+        path: '/coder',
+        name: 'coder',
+        component: () => import('@/views/builder/coder.vue')
+      },
+      {
+        path: '/formDraggable',  //表单设计
+        name: 'formDraggable',
+        component: () => import('@/views/formDraggable/formDraggable.vue')
+      },
+      {
+        path: '/formSubmit',  //表单提交页面
+        name: 'formSubmit',
+        component: () => import('@/views/formDraggable/FormSubmit.vue'),
+        meta:{
+          keepAlive:false
+        }
+      },
+      {
+        path: '/formCollectionResultTree',  //显示收集的数据表单
+        name: 'formCollectionResultTree',
+        component: () => import('@/views/formDraggable/FormCollectionResultTree.vue'),
+        meta:{
+          keepAlive:false
+        }
+      },
+      {
+        path: '/signalR', 
+        name: 'signalR',
+        component: () => import('@/views/signalR/Index.vue'),
+        meta:{
+          keepAlive:false
+        }
+      }
+    ]
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/views/Login.vue')
+  },
+  {
+    path: '/app/guide',
+    name: 'apphome',
+    meta: {
+      anonymous: true
+    },
+    component: () => import('@/views/h5/Guide.vue'),
+  },
+  {
+    path: '/bigdata',
+    name: 'bigdata',
+    component: () => import('@/views/charts/bigdata.vue'),
+    meta: {
+      keepAlive: false
+    }
+  }
+]
 
 const router = createRouter({
 	history: createWebHashHistory(), //createWebHistory(process.env.BASE_URL),

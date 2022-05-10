@@ -72,12 +72,12 @@
 			</view>
 
 			<view class="f-form-content" v-else-if="item.type=='number'">
-				<input placeholder-style="color:rgb(192 196 204);font-size:15px;" type="number"
+				<input :ref="item.field" placeholder-style="color:rgb(192 196 204);font-size:15px;" type="number"
 					v-model="formFields[item.field]" border="none"
 					:placeholder="item.placeholder||('请输入'+item.title)"></input>
 			</view>
 			<view class="f-form-content" v-else-if="item.type=='decimal'">
-				<input placeholder-style="color:rgb(192 196 204);font-size:15px;" type="digit"
+				<input :ref="item.field" placeholder-style="color:rgb(192 196 204);font-size:15px;" type="digit"
 					v-model="formFields[item.field]" border="none"
 					:placeholder="item.placeholder||('请输入'+item.title)"></input>
 			</view>
@@ -90,29 +90,32 @@
 				</u-radio-group>
 			</view>
 			<view class="f-form-content" v-else-if="item.type=='textarea'">
-				<textarea auto-height style="width: 100%;padding-right: 8rpx;" v-model="inFormFields[item.field]"
-					border="none" :placeholder="item.placeholder||('请输入'+item.title)"></textarea>
+				<textarea :ref="item.field" auto-height style="width: 100%;padding-right: 8rpx;"
+					v-model="inFormFields[item.field]" border="none"
+					:placeholder="item.placeholder||('请输入'+item.title)"></textarea>
 			</view>
 			<!-- 	 -->
-			<u-upload :sizeType="['compressed']" v-else-if="item.type=='img'" :fileList="inFormFields[item.field]"
-				@afterRead="(event)=>{afterRead(item,event)}" @delete="(event)=>{deletePic(item,event)}" name="3"
-				:multiple="item.multiple" :maxCount="item.maxCount||1" :previewFullImage="true"></u-upload>
+			<u-upload :ref="item.field" :sizeType="['compressed']" v-else-if="item.type=='img'"
+				:fileList="inFormFields[item.field]" @afterRead="(event)=>{afterRead(item,event)}"
+				@delete="(event)=>{deletePic(item,event)}" name="3" :multiple="item.multiple"
+				:maxCount="item.maxCount||1" :previewFullImage="true"></u-upload>
 			<view class="f-form-content" v-else-if="item.type=='password'">
 				<input placeholder-style="color:rgb(192 196 204);font-size:15px;" type="password"
-					v-model="inFormFields[item.field]" border="none"
+					v-model="inFormFields[item.field]" border="none" :ref="item.field"
 					:placeholder="item.placeholder||('请输入'+item.title)"></input>
 			</view>
 			<view class="f-form-content" v-else>
 				<input placeholder-style="color:rgb(192 196 204);font-size:15px;" type="text"
-					v-model="inFormFields[item.field]" border="none"
+					v-model="inFormFields[item.field]" border="none" :ref="item.field"
 					:placeholder="item.placeholder||('请输入'+item.title)"></input>
 			</view>
 		</view>
 		<slot></slot>
 		<!--日期 -->
-		<u-datetime-picker class="form-popup" :zIndex="9999999" :closeOnClickOverlay="true" :show="pickerModel"
-			:value="pickerValue" :mode="pickerCurrentItem.type||'date'" closeOnClickOverlay @confirm="pickerConfirm"
-			@cancel="pickerClose" @close="pickerClose"></u-datetime-picker>
+		<u-datetime-picker class="form-popup" :minDate="pickerCurrentItem.min" :maxDate="pickerCurrentItem.max"
+			:zIndex="9999999" :closeOnClickOverlay="true" :show="pickerModel" :value="pickerValue"
+			:mode="pickerCurrentItem.type||'date'" closeOnClickOverlay @confirm="pickerConfirm" @cancel="pickerClose"
+			@close="pickerClose"></u-datetime-picker>
 		<!--  下拉框 -->
 		<u-popup @touchmove.prevent class="form-popup" :zIndex="999999" :show="actionSheetModel"
 			@close="actionSheetModel=false;">
@@ -120,9 +123,22 @@
 				<view class="vol-action-sheet-select-title">请选择{{actionSheetCurrentItem.title}}
 					<text class="vol-action-sheet-select-confirm" @click="actionConfirmClick">确定</text>
 				</view>
+			<!-- 	超过10个下拉框选项默认开启搜索 -->
+				<view class="vol-action-sheet-select-filter" v-show="actionSheetCurrentItem.data&&actionSheetCurrentItem.data.length>=10">
+					<view
+						style="padding-left:20rpx;flex:1;font-size: 22px;color: #909399;background: white;">
+						<u--input placeholder="请输入关键字搜索" v-model="searchText">
+						</u--input>
+					</view>
+					<view class="search-btn">
+						<u-button type="primary" icon="trash" @click="searchText=''"
+							size="small">清除</u-button>
+					</view>
+				</view>
 				<view class="vol-action-sheet-select-content">
 					<view :class="{'vol-action-sheet-select-actived':actionSheetModel&&isActionSelected(item)}"
-						@click="actionClick(item)" v-show="!item.hidden" :key="index"
+						@click="actionClick(item)"
+						v-show="!item.hidden&&(!searchText||item.value.indexOf(searchText)!=-1)" :key="index"
 						v-for="(item,index) in actionSheetCurrentItem.data" class="vol-action-sheet-select-item">
 						{{item.value}}
 					</view>
@@ -172,6 +188,7 @@
 		name: "vol-form",
 		data() {
 			return {
+				searchText: '', //搜索的内容
 				inFormFields: {},
 				inFormOptions: [],
 				maxHeight: 400,
@@ -189,6 +206,21 @@
 			};
 		},
 		created() {
+			//日期最小最大值转换
+			this.formOptions.forEach(option => {
+				if ((option.type == 'date' || option.type == 'datetime')) {
+					if (!option.min) {
+						option.min = Number(new Date('1990/01/01 00:00:00')) //
+					} else if (typeof option.min == 'string') {
+						option.min = Number(new Date(option.min.replace(/-/g, "/")))
+					}
+					if (!option.max) {
+						option.max = Number(new Date(new Date().getFullYear() + 10 + '/01/01 00:00:00')) //
+					} else if (option.max && typeof option.max == 'string') {
+						option.max = Number(new Date(option.max.replace(/-/g, "/")))
+					}
+				}
+			})
 			this.inFormOptions = this.formOptions;
 			this.inFormFields = this.formFields;
 			this.imgFields = this.inFormOptions.filter(x => {
@@ -256,6 +288,7 @@
 				this.$emit('dicInited', result);
 			},
 			showActionSheet(item) {
+				this.searchText='';
 				this.actionSheetSelectValues = [];
 				this.actionSheetCurrentItem = item;
 				var value = this.inFormFields[item.field];
@@ -376,8 +409,9 @@
 					}
 					val = val[index];
 				}
-				this.pickerValue = val || (item.type == 'date' ? this.base.getDate() : this.base.getDateTime().substring(0,
+				val = val || (item.type == 'date' ? this.base.getDate() : this.base.getDateTime().substring(0,
 					16))
+				this.pickerValue = Number(new Date(val.replace(/-/g, "/")))
 				this.pickerModel = true;
 				this.hideKeyboard();
 			},
@@ -520,11 +554,11 @@
 				for (let i = 0; i < lists.length; i++) {
 					const result = await this.uploadFilePromise(lists[i].url, option.url)
 					let item = this.inFormFields[option.field][fileListLen];
-					let fileName=lists[i].name;
-					if(!fileName&& lists[i].thumb){
-						let arr= lists[i].thumb.split('.');
-						let _obj= arr[0].split('/');
-						fileName=_obj[_obj.length-1]+'.'+arr[1];
+					let fileName = lists[i].name;
+					if (!fileName && lists[i].thumb) {
+						let arr = lists[i].thumb.split('.');
+						let _obj = arr[0].split('/');
+						fileName = _obj[_obj.length - 1] + '.' + arr[1];
 					}
 					this.inFormFields[option.field].splice(fileListLen, 1, Object.assign(item, {
 						status: 'success',
@@ -624,6 +658,19 @@
 		// 		font-weight: 500;
 		// 	}
 		// }
+		.vol-action-sheet-select-filter {
+		    display: flex;
+		    background: #ffff;
+		    padding: 10rpx;
+		    border-bottom: 1px solid #eeee;
+			.search-btn {
+				    position: relative;
+				    top: 3px;
+				// margin-left: 20rpx;
+				// padding-right: 20rpx;
+				// width: 100rpx;
+			}
+		}
 
 		.vol-action-sheet-select-content {
 

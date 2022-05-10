@@ -20,7 +20,7 @@
 				<u-empty mode="list" v-if="!rowsData.length" text="无数据"
 					icon="http://cdn.uviewui.com/uview/empty/list.png"></u-empty>
 				<u-list :upperThreshold="-999" v-if="tableHeight" :height="tableHeight" @scrolltolower="scrolltolower">
-					<view @click="rowClick(rowindex,columns)" :key="rowindex" class="vol-table-body-rows"
+					<view @click="tableRowClick(rowindex,columns)" :key="rowindex" class="vol-table-body-rows"
 						v-for="(row,rowindex) in rowsData">
 						<view class="cell-index" v-if="index">
 							{{rowindex+1}}
@@ -28,13 +28,20 @@
 						<view :style="{width:column.width+'px',flex:column.width?'unset':1}"
 							:class="{'text-inline':textInline}" :key="cindex" class="vol-table-body-cell"
 							v-if="!column.hidden" v-for="(column,cindex) in columns">
-							<view class="vol-cell" v-if="column.formatter" v-html="rowFormatter(row,column,rowindex)">
+							<view :style="column.style" class="vol-cell" @click.stop="cellClick(rowindex,row,column)"
+								v-if="column.click">
+								<view v-if="column.formatter" v-html="rowFormatter(row,column,rowindex)"></view>
+								<view v-else="column.formatter">{{row[column.field]}}</view>
+							</view>
+							<view class="vol-cell" v-else-if="column.formatter"
+								v-html="rowFormatter(row,column,rowindex)">
 							</view>
 							<view class="vol-cell" v-else-if="column.type=='img'">
 								<u--image style="float:left;margin-left:5px;" width="40px" height="40px" radius="4px"
 									:src="src" v-for="(src,index) in getImgSrc(row[column.field])" :key="index">
 								</u--image>
 							</view>
+
 							<view class="vol-cell" v-else-if="column.bind">
 								{{rowFormatterValue(row,column)}}
 							</view>
@@ -54,7 +61,7 @@
 				<u-empty mode="list" v-if="!rowsData.length" text="无数据"
 					icon="http://cdn.uviewui.com/uview/empty/list.png">
 				</u-empty>
-				<view @click="rowClick(rowindex,columns)" :key="rowindex" v-for="(row,rowindex) in rowsData">
+				<view @click="tableRowClick(rowindex,columns)" :key="rowindex" v-for="(row,rowindex) in rowsData">
 					<view v-if="titleField" class="vol-table-list-item-title">
 						<view class="vol-table-list-item-title-left">{{getListTitleValue(row)}}</view>
 						<slot :data="row" name="title"></slot>
@@ -64,7 +71,10 @@
 							v-if="!column.hidden&&column.field!=titleField" v-for="(column,cindex) in columns">
 							<view class="cell-left"> {{column.title}}</view>
 							<view class="cell-right">
-								<view v-if="column.formatter" v-html="rowFormatter(row,column)"></view>
+								<view @click.stop="cellClick(rowindex,row,column)" v-if="column.click">
+									{{row[column.field]}}
+								</view>
+								<view v-else-if="column.formatter" v-html="rowFormatter(row,column)"></view>
 								<view v-else-if="column.bind">
 									{{rowFormatterValue(row,column)}}
 								</view>
@@ -91,7 +101,7 @@
 <script>
 	let _this;
 	export default {
-		name: "vol-table",
+		// name: "vol-table",
 		props: {
 			loadKey: {
 				type: Boolean,
@@ -137,7 +147,8 @@
 				default: () => {
 					return []
 				}
-			}
+			},
+			rowClick: null
 		},
 		data() {
 			return {
@@ -192,7 +203,11 @@
 					this.rowsData.push(...data.rows);
 				})
 			},
-			rowClick(index, columns) {
+			tableRowClick(index, columns) {
+				if (this.rowClick) {
+					this.rowClick(index, this.rowsData[index], columns);
+					return;
+				}
 				_this.$emit('rowClick', index, this.rowsData[index], columns);
 			},
 			rowFormatter(row, column, index) {
@@ -203,6 +218,7 @@
 				return _val;
 			},
 			rowFormatterValueList(val, column) {
+
 				let valArr = val.split(",").filter((x) => {
 					return x !== "" && x !== undefined;
 				});
@@ -216,7 +232,11 @@
 				return valArr.join(",");
 			},
 			rowFormatterValue(row, column) {
+				if (this.base.isEmpty(row[column.field])) {
+					return '';
+				}
 				let _val = row[column.field] + '';
+
 				if (!column.bind.data.length) {
 					return _val;
 				}
@@ -291,6 +311,9 @@
 					})
 
 				})
+			},
+			cellClick(rowIndex, row, column) {
+				this.$emit('cellClick', rowIndex, row, column)
 			}
 		},
 		created() {
@@ -318,7 +341,6 @@
 				});
 			}
 		},
-
 		watch: {
 			// #ifdef MP-WEIXIN
 			inColumns: {
@@ -350,6 +372,7 @@
 
 <style lang="less" scoped>
 	.vol-table-head {
+		padding: 0 8rpx;
 		display: flex;
 		background: #f3f3f3;
 
@@ -372,17 +395,24 @@
 		}
 	}
 
+
+
 	.vol-table-body-rows {
 		display: flex;
+		padding: 0 8rpx;
 
 		.vol-table-body-cell {
 			word-break: break-all;
-			padding: 30rpx 6rpx;
+			padding: 0 6rpx;
 			text-align: center;
 			flex: 1;
 			width: 0;
 			font-size: 24rpx;
 			color: #484848;
+
+			.vol-cell {
+				padding: 30rpx 0rpx;
+			}
 		}
 
 		.text-inline {

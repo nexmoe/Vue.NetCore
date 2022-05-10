@@ -181,11 +181,20 @@
                   <el-option
                     v-for="item in column.bind.data"
                     :key="item.key"
+                    v-show="!item.hidden"
+                    :disabled="item.disabled"
                     :label="item.value"
                     :value="item.key"
                     >{{ item.value }}
                   </el-option>
                 </el-select>
+                <el-input
+                  v-else-if="column.edit.type == 'textarea'"
+                  type="textarea"
+                  :placeholder="column.placeholder || column.title"
+                  v-model="scope.row[column.field]"
+                >
+                </el-input>
                 <el-input
                   v-else
                   @change="inputKeyPress(scope.row, column, $event)"
@@ -526,7 +535,7 @@ export default defineComponent({
     //2021.09.21移除强制固定行号与checkbox列
     if (
       this.columns.some((x) => {
-        return x.fixed&&x.fixed != 'right';
+        return x.fixed && x.fixed != 'right';
       })
     ) {
       this.fixed = true;
@@ -871,9 +880,11 @@ export default defineComponent({
       if (!this.doubleEdit && event) {
         return true;
       }
+      let _row = this.url
+        ? this.rowData[this.edit.rowIndex]
+        : this.tableData[this.edit.rowIndex];
       // 结束编辑前
-      if (!this.endEditBefore(row, column, this.edit.rowIndex)) return false;
-
+      if (!this.endEditBefore(_row, column, this.edit.rowIndex)) return false;
       if (this.edit.rowIndex != -1) {
         let row = (this.url ? this.rowData : this.tableData)[
           this.edit.rowIndex
@@ -887,15 +898,15 @@ export default defineComponent({
           }
         }
       }
-      if (!this.endEditAfter(row, column, this.edit.rowIndex)) return false;
+      if (!this.endEditAfter(_row, column, this.edit.rowIndex)) return false;
       this.edit.rowIndex = -1;
       return true;
     },
     validateRow(row, option1) {
       if (!this.validateColum(option1, row)) {
         this.errorFiled = option1.field;
-        _errMsg = option1.title + _errMsg;
-        this.$message.error(_errMsg);
+        // 2022.05.06 修改错误信息重复的问题
+        this.$message.error(option1.title + _errMsg);
         return false;
       }
       this.errorFiled = '';
@@ -1007,6 +1018,8 @@ export default defineComponent({
         row = {};
       }
       this.columns.forEach((x) => {
+        // 2022.05.06 添加行时，如果列有编辑属性，设置开启编辑(避免关闭编辑后，无法再次启用编辑)??
+        //x.readonly = false;
         if (!row.hasOwnProperty(x.field)) {
           if (x.edit && x.edit.type == 'switch') {
             row[x.field] = x.type == 'bool' ? false : 0;
@@ -1136,9 +1149,9 @@ export default defineComponent({
           this.paginations.total = data.total;
           // 合计
           this.getSummaries(data);
-          this.$nextTick(()=>{
-              this.$refs.table.doLayout();
-          })
+          this.$nextTick(() => {
+            this.$refs.table.doLayout();
+          });
         },
         (error) => {
           this.loading = false;
@@ -1518,11 +1531,9 @@ export default defineComponent({
   background-color: unset;
 }
 .vol-table.chrome ::v-deep(.el-table__fixed-right) {
-     right: 8px !important;
+  right: 8px !important;
 }
 .vol-table.chrome ::v-deep(.el-table__fixed-right:before) {
-    height: 0 !important;
+  height: 0 !important;
 }
-
-
 </style>

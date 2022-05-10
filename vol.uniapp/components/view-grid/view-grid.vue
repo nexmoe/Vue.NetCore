@@ -2,7 +2,7 @@
 	<view class="view-grid">
 		<slot name="gridHeader"></slot>
 		<!-- 	表格数据 -->
-		<vol-table :url="tableUrl" @rowClick="gridRowClick" :defaultLoadPage="load" @loadBefore="loadGridTableBefore"
+		<vol-table :url="tableUrl" @cellClick="gridCellClick" :rowClick="gridRowClick" :defaultLoadPage="load" @loadBefore="loadGridTableBefore"
 			:index="rowIndex" @loadAfter="loadGridTableAfter" ref="table" :direction="direction"
 			:titleField="titleField" :height="height" @formatter="cellFormatter" :columns.sync="columns"
 			:textInline="textInline">
@@ -207,23 +207,28 @@
 				return callback(row[column.field]);
 			},
 			gridRowClick(index, row, columns) {
-				this.currentRow = row;
-				this.currentAction = 'Update';
-				this.hiddenDelButton(false)
+				_$this.currentRow = row;
+				_$this.currentAction = 'Update';
+				_$this.hiddenDelButton(false)
 				//this.editFormFields.Name=Math.random();
-				if (this.$refs.form) {
-					this.$refs.form.reset(row);
+				if (_$this.$refs.form) {
+					_$this.$refs.form.reset(row);
 				} else {
-					this.resetEditForm(row)
+					_$this.resetEditForm(row)
 				}
 
 				// Object.assign(this.editFormFields, row);
 				if (_$this.rowClick && !_$this.rowClick(index, row, columns)) {
 					return;
 				};
-				if (this.modelOpenBefore(row) && this.modelOpenAfter(row)) {
-					this.model = true;
+				if (_$this.modelOpenBefore(row) && _$this.modelOpenAfter(row)) {
+					_$this.model = true;
 				}
+			},
+			gridCellClick(index,row,column){
+				if (_$this.cellClick && !_$this.cellClick(index, row, column)) {
+					return;
+				};
 			},
 			hiddenDelButton(hidden) {
 				let delButton = this.buttons.find(x => {
@@ -408,15 +413,6 @@
 				if (!this.$refs.form.validate()) {
 					return;
 				}
-				if (this.currentAction == 'Add') {
-					if (this.addBefore && !this.addBefore(this.editFormFields)) {
-						return;
-					}
-				} else {
-					if (this.updateBefore && !this.updateBefore(this.editFormFields)) {
-						return;
-					}
-				}
 				let editFormFields = {};
 				editFormFields[this.options.table.key] = this.currentRow[this.options.table.key]
 				//将数组转换成string
@@ -447,6 +443,15 @@
 					detailData: null,
 					delKeys: null
 				};
+				if (this.currentAction == 'Add') {
+					if (this.addBefore && !this.addBefore(formData)) {
+						return;
+					}
+				} else {
+					if (this.updateBefore && !this.updateBefore(formData)) {
+						return;
+					}
+				}
 				let url = 'api' + this.options.table.url + (this.currentAction);
 				this.http.post(url, formData, true).then(result => {
 					this.$toast(result.message);
@@ -469,7 +474,7 @@
 			},
 			initPermissionButtons() { //初始化按钮权限
 				let _permission = (this.permission.find(x => {
-					return (this.tableAction || this.options.table.name) == x.tableName
+					return (this.tableAction || this.options.table.name).toUpperCase() == x.tableName.toUpperCase()
 				}) || {}).permission;
 				if (!_permission) {
 					return;
@@ -492,6 +497,7 @@
 						name: "重置",
 						icon: 'reload',
 						value: 'reset',
+						hidden:false,
 						type: 'success',
 						onClick: () => {
 							this.resetEditForm();
@@ -500,6 +506,7 @@
 						name: "提交",
 						icon: 'checkbox-mark',
 						value: 'add',
+						hidden:false,
 						type: 'primary',
 						onClick: () => {
 							this.gridSave();
@@ -517,6 +524,7 @@
 				let fabButtons = [{
 					icon: "search",
 					value: "search",
+				    hidden:false,
 					color: 'rgb(7 185 14)',
 					onClick: () => {
 						this.showSearch();
@@ -524,6 +532,7 @@
 				}, {
 					icon: "reload", //刷新
 					value: "search",
+					hidden:false,
 					color: '#009688',
 					onClick: () => {
 						this.refresh();
@@ -532,6 +541,7 @@
 				if (_permission.indexOf("Add") != -1) {
 					fabButtons.push({
 						icon: "plus", //添加
+					    hidden:false,
 						color: 'rgb(2, 171, 255)',
 						onClick: () => {
 							this.gridAdd();

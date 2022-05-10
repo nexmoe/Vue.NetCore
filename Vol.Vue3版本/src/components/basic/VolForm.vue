@@ -60,9 +60,12 @@
 
           <div v-else :class="{ 'form-item-extra': item.extra }">
             <!-- 只读属性 -->
-            <label v-if="item.type == 'label'" class="readonly-input">{{
-              getText(formFields, item)
-            }}</label>
+            <label
+              :style="item.inputStyle"
+              v-if="item.type == 'label'"
+              class="readonly-input"
+              >{{ getText(formFields, item) }}</label
+            >
             <el-select
               :disabled="item.readonly || item.disabled"
               v-show="!item.hidden"
@@ -86,6 +89,8 @@
               "
             >
               <el-option
+                v-show="!item.hidden"
+                :disabled="item.disabled"
                 v-for="item in item.data"
                 :key="item.key"
                 :label="item.value"
@@ -284,6 +289,7 @@
             </div>
             <el-input
               clearable
+              :input-style="item.inputStyle"
               :disabled="item.readonly || item.disabled"
               v-else-if="item.type == 'textarea'"
               v-model="formFields[item.field]"
@@ -299,6 +305,7 @@
             />
             <el-input-number
               style="width: 100%"
+              :input-style="item.inputStyle"
               v-else-if="item.type == 'number'"
               v-model="formFields[item.field]"
               :min="item.min"
@@ -308,6 +315,7 @@
             />
             <el-input
               clearable
+              :input-style="item.inputStyle"
               v-else-if="item.type == 'password'"
               type="password"
               v-model.number="formFields[item.field]"
@@ -321,6 +329,7 @@
             <!-- 2021.11.18修复el-input没有默认enter事件时回车异常 -->
             <el-input
               clearable
+              :input-style="item.inputStyle"
               v-else-if="item.onKeyPress"
               size="medium"
               :placeholder="
@@ -341,6 +350,7 @@
               clearable
               v-else
               size="medium"
+              :input-style="item.inputStyle"
               :placeholder="
                 item.placeholder ? item.placeholder : '请输入' + item.title
               "
@@ -686,10 +696,14 @@ export default defineComponent({
   },
   methods: {
     getColWidth(item) {
-      //2021.08.30增加动态计算表单宽度
+      //2021.08.30 增加动态计算表单宽度
       let _span = 0;
       this.formRules.forEach((row, xIndex) => {
-        if (row.length > _span) _span = row.length;
+        //2022.05.06 追加表单中隐藏的元素不参与动态计算表单宽度
+        let rowLength = row.filter((item) => {
+          return !item.hidden;
+        }).length;
+        if (rowLength > _span) _span = rowLength;
       });
       let rete =
         Math.round(((item.colSize || 12 / _span) / 0.12) * colPow, 10.0) /
@@ -1262,6 +1276,7 @@ export default defineComponent({
   padding-left: 5px;
 }
 .el-form-item ::v-deep(textarea) {
-  font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif !important;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', '微软雅黑', Arial, sans-serif !important;
 }
 </style>
