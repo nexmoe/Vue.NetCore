@@ -17,6 +17,8 @@ app.config.globalProperties.http = http;
 app.config.globalProperties.$tabs = {};
 app.config.globalProperties.permission = permission;
 
+app.config.globalProperties.APIURL = "http://10.30.0.151:8081/"
+
 app.use(store)
     .use(ElementPlus, {size: 'medium' })
     .use(router)
