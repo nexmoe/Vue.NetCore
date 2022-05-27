@@ -4,9 +4,10 @@
     v-model="keywords"
     placeholder="在这里搜索"
     class="nexmoe-search"
+    @keydown.enter="searchFunc()"
   >
     <template #append>
-      <el-button icon="el-icon-search" />
+      <el-button @click="searchFunc()" icon="el-icon-search" />
     </template>
   </el-input>
   <section>
@@ -36,7 +37,7 @@
   <el-pagination
     background
     v-model:currentPage="pageNow"
-    :page-size="16"
+    :page-size="12"
     layout="prev, pager, next"
     :total="dataTotal"
   />
@@ -82,9 +83,17 @@ getData();
 
 watch(keywords, () => {
   if (keywords.value) {
-    getDataBykeyword();
+    // getDataBykeyword();
+  } else {
+    getData();
   }
 });
+
+let searchFunc = () => {
+  if (keywords.value) {
+    getDataBykeyword();
+  }
+}
 
 watch(pageNow, () => {
   keywords.value ? getDataBykeyword() : getData();

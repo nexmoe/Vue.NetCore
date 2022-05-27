@@ -76,6 +76,9 @@ const activeName = ref("jbqk");
 const userImg = ref("")
 
 http.get("/api/V_ds_dsxx/" + router.params.id).then((res) => {
+	if(res == "noAudit") {
+		window.location.href = '/#/pub/index'
+	}
 	item.value = res;
 	if (res.HeadImageUrl) {
 		userImg.value = _config.base.getImgSrc(res.HeadImageUrl, http.ipAddress);
